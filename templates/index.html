@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pitch Visualizer — Storyboard Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0c0f;
+      --surface:   #13151a;
+      --surface2:  #1c1f27;
+      --border:    #2a2d38;
+      --accent:    #e8c97e;
+      --accent2:   #7eb5e8;
+      --text:      #e8e9ec;
+      --muted:     #6b7080;
+      --danger:    #e87e7e;
+      --radius:    10px;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+      --font-mono:  'DM Mono', monospace;
+      --font-sans:  'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      position: relative;
+      padding: 3.5rem 2rem 2.5rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 50%;
+      transform: translateX(-50%);
+      width: 80px; height: 2px;
+      background: var(--accent);
+    }
+
+    .logo-tag {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 400;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    h1 em { color: var(--accent); font-style: italic; }
+
+    .subtitle {
+      margin-top: 0.6rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 5rem;
+    }
+
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .input-card label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+      font-family: var(--font-mono);
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 300;
+      line-height: 1.7;
+      padding: 0.9rem 1rem;
+      resize: vertical;
+      min-height: 130px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+
+    .controls-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.25rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .select-group {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      padding: 0.55rem 0.85rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7080' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.85rem center;
+      padding-right: 2.2rem;
+    }
+
+    select:focus { border-color: var(--accent2); }
+
+    .btn-generate {
+      background: var(--accent);
+      color: #0b0c0f;
+      border: none;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      padding: 0.6rem 1.6rem;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-generate:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-generate:active { transform: translateY(0); }
+    .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    #status-bar {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent2);
+      border-radius: var(--radius);
+      padding: 0.85rem 1.2rem;
+      margin-bottom: 2rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--accent2);
+    }
+
+    #status-bar.visible { display: flex; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent2);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #status-bar.done  { border-left-color: var(--accent);  color: var(--accent); }
+    #status-bar.error { border-left-color: var(--danger);  color: var(--danger); }
+
+    /* ── Visual Bible card ─────────────────────────────────────── */
+    #bible-card {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 2rem;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    #bible-card.visible { display: block; }
+
+    .bible-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .bible-title {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .bible-subtitle {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .bible-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .bible-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.55rem 0.75rem;
+    }
+
+    .bible-item-key {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+    }
+
+    .bible-item-val {
+      font-size: 0.78rem;
+      color: var(--text);
+      line-height: 1.45;
+      font-weight: 300;
+    }
+
+    #storyboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(18px);
+      animation: panel-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes panel-in { to { opacity: 1; transform: translateY(0); } }
+
+    .panel-img-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: var(--surface2);
+      overflow: hidden;
+    }
+
+    .panel-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .panel:hover .panel-img-wrap img { transform: scale(1.03); }
+
+    .panel-num {
+      position: absolute;
+      top: 0.6rem; left: 0.6rem;
+      background: rgba(11,12,15,0.75);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--accent);
+      padding: 0.2rem 0.5rem;
+      backdrop-filter: blur(4px);
+    }
+
+    .panel-body { padding: 1rem 1.1rem 1.2rem; }
+
+    .panel-sentence {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--text);
+      font-weight: 300;
+      margin-bottom: 0.75rem;
+    }
+
+    details { border-top: 1px solid var(--border); padding-top: 0.65rem; }
+
+    summary {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+    summary::before { content: '▶  '; font-size: 0.55rem; }
+    details[open] summary::before { content: '▼  '; }
+
+    .prompt-text {
+      margin-top: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.55;
+      background: var(--surface2);
+      border-radius: 4px;
+      padding: 0.65rem 0.75rem;
+    }
+
+    .panel-skeleton {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+    .skel-img { width: 100%; aspect-ratio: 1/1; background: var(--surface2); }
+    .skel-line { height: 12px; border-radius: 4px; background: var(--surface2); margin: 1rem 1.1rem 0.5rem; }
+    .skel-line.short { width: 55%; margin-bottom: 1.2rem; }
+
+    .error-banner {
+      background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+      color: var(--danger);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <p class="logo-tag">AI Storyboard Engine</p>
+  <h1>The Pitch <em>Visualizer</em></h1>
+  <p class="subtitle">Transform narrative text into a visual storyboard, panel by panel.</p>
+</header>
+
+<main>
+  <div class="input-card">
+    <label for="narrative">Narrative Text</label>
+    <textarea
+      id="narrative"
+      placeholder="Paste a 3–5 sentence story or pitch narrative here…&#10;&#10;Example: A small bakery in Lyon struggled to survive the pandemic. They partnered with us to build an online ordering system. Within six months, their revenue had doubled and they expanded to two new locations."
+    ></textarea>
+
+    <div class="controls-row">
+      <div class="select-group">
+        <label for="img-backend-select">Image Gen Model</label>
+        <select id="img-backend-select">
+          {% for b in image_backends %}
+          <option value="{{ b }}" {% if b == default_img_backend %}selected{% endif %}>
+            {% if b == "local" %}Local (Stable Diffusion)
+            {% elif b == "stability" %}Stability AI API
+            {% elif b == "dalle" %}DALL-E 3 (OpenAI)
+            {% else %}{{ b.title() }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label for="style-select">Visual Style</label>
+        <select id="style-select">
+          {% for s in styles %}
+          <option value="{{ s }}" {% if s == default_style %}selected{% endif %}>
+            {{ s.replace('_', ' ').title() }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="select-group">
+        <label for="llm-select">Prompt LLM</label>
+        <select id="llm-select">
+          {% for l in llm_providers %}
+          <option value="{{ l }}" {% if l == default_llm %}selected{% endif %}>
+            {{ l.title() }}
+          </option>
+          {% endfor %}
+          <option value="none">None (fallback)</option>
+        </select>
+      </div>
+
+      <button class="btn-generate" id="gen-btn" onclick="generate()">
+        Generate Storyboard
+      </button>
+    </div>
+  </div>
+
+  <div id="status-bar">
+    <div class="spinner" id="spinner"></div>
+    <span id="status-text">Initialising…</span>
+  </div>
+
+  <!-- Visual Bible card — shown after phase 1 completes -->
+  <div id="bible-card">
+    <div class="bible-header">
+      <span class="bible-title">Visual Bible</span>
+      <span class="bible-subtitle">Consistency anchors extracted from your narrative</span>
+    </div>
+    <div class="bible-grid" id="bible-grid"></div>
+  </div>
+
+  <div id="storyboard"></div>
+</main>
+
+<script>
+  let activeSource = null;
+
+  function generate() {
+    const text       = document.getElementById('narrative').value.trim();
+    const style      = document.getElementById('style-select').value;
+    const llm        = document.getElementById('llm-select').value;
+    const imgBackend = document.getElementById('img-backend-select').value;
+
+    if (!text) { alert('Please enter some narrative text first.'); return; }
+
+    if (activeSource) { activeSource.close(); activeSource = null; }
+
+    document.getElementById('storyboard').innerHTML = '';
+    document.getElementById('bible-card').classList.remove('visible');
+    document.getElementById('bible-grid').innerHTML = '';
+    setStatus('Connecting…', 'loading');
+    document.getElementById('gen-btn').disabled = true;
+
+    const params = new URLSearchParams({ text, style, llm, img_backend: imgBackend });
+    const es = new EventSource(`/generate?${params}`);
+    activeSource = es;
+
+    es.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+
+      if (data.type === 'bible') {
+        showBible(data.data);
+        setStatus(`Visual bible ready — generating ${data.total} panels…`, 'loading');
+      }
+
+      if (data.type === 'status') {
+        setStatus(data.message, 'loading');
+        if (data.message.includes('generating image')) {
+          const idx = parseInt(data.message.match(/Panel (\d+)/)?.[1] || '0');
+          if (idx > 0) showSkeleton(idx);
+        }
+      }
+
+      if (data.type === 'panel') {
+        removeSkeleton(data.index);
+        addPanel(data);
+      }
+
+      if (data.type === 'done') {
+        setStatus(data.message, 'done');
+        document.getElementById('gen-btn').disabled = false;
+        es.close();
+      }
+
+      if (data.type === 'error') {
+        setStatus(data.message, 'error');
+        document.getElementById('storyboard').innerHTML +=
+          `<div class="error-banner">⚠ ${data.message}</div>`;
+        document.getElementById('gen-btn').disabled = false;
+        es.close();
+      }
+    };
+
+    es.onerror = () => {
+      setStatus('Connection lost. Please try again.', 'error');
+      document.getElementById('gen-btn').disabled = false;
+      es.close();
+    };
+  }
+
+  function showBible(bible) {
+    const card  = document.getElementById('bible-card');
+    const grid  = document.getElementById('bible-grid');
+    const order = ['setting', 'palette', 'subject', 'mood', 'lighting'];
+    grid.innerHTML = '';
+    order.forEach(key => {
+      if (!bible[key]) return;
+      const item = document.createElement('div');
+      item.className = 'bible-item';
+      item.innerHTML = `
+        <div class="bible-item-key">${key}</div>
+        <div class="bible-item-val">${escHtml(bible[key])}</div>
+      `;
+      grid.appendChild(item);
+    });
+    card.classList.add('visible');
+  }
+
+  function setStatus(msg, state) {
+    const bar     = document.getElementById('status-bar');
+    const txt     = document.getElementById('status-text');
+    const spinner = document.getElementById('spinner');
+    bar.className = 'visible ' + state;
+    txt.textContent = msg;
+    spinner.style.display = (state === 'loading') ? 'block' : 'none';
+  }
+
+  function showSkeleton(idx) {
+    const board = document.getElementById('storyboard');
+    if (document.getElementById(`skel-${idx}`)) return;
+    board.insertAdjacentHTML('beforeend', `
+      <div class="panel-skeleton" id="skel-${idx}">
+        <div class="skel-img"></div>
+        <div class="skel-line"></div>
+        <div class="skel-line short"></div>
+      </div>
+    `);
+    board.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+
+  function removeSkeleton(idx) {
+    const skel = document.getElementById(`skel-${idx}`);
+    if (skel) skel.remove();
+  }
+
+  function addPanel(data) {
+    const board = document.getElementById('storyboard');
+    const div = document.createElement('div');
+    div.className = 'panel';
+    div.innerHTML = `
+      <div class="panel-img-wrap">
+        <img src="${data.image_url}" alt="Panel ${data.index}" loading="lazy" />
+        <span class="panel-num">Panel ${data.index} / ${data.total}</span>
+      </div>
+      <div class="panel-body">
+        <p class="panel-sentence">${escHtml(data.sentence)}</p>
+        <details>
+          <summary>View Prompt</summary>
+          <p class="prompt-text">${escHtml(data.prompt)}</p>
+        </details>
+      </div>
+    `;
+    board.appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') generate();
+  });
+</script>
+</body>
+</html>
