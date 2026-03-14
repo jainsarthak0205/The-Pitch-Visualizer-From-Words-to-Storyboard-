@@ -93,7 +93,7 @@ pitch_visualizer/
 ### Step 1 — Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/jainsarthak0205/The-Pitch-Visualizer-From-Words-to-Storyboard-.git
 cd pitch_visualizer
 ```
 
