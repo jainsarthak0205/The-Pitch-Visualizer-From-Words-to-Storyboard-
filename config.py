@@ -3,7 +3,7 @@ import os
 # --- API Keys (set these as environment variables) ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-GEMINI_API_KEY = os.getenv("AIzaSyBYAPiKl5WsFI5jg1i-sLWBXMm11nlXFIQ", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # --- Stability AI (for API-based image generation) ---
 STABILITY_API_KEY = os.getenv("STABILITY_API_KEY", "")
